@@ -1,9 +1,9 @@
-document.pdf : document.md examples/*.dsp
+mlir-faust-signals.pdf : mlir-faust-signals.md examples/*.dsp
 	make -C examples
-	pandoc document.md -o document.pdf --from markdown --template=eisvogel --listings
+	pandoc mlir-faust-signals.md -o mlir-faust-signals.pdf --from markdown --template=eisvogel --listings
 
 clean:
-	rm -f document.pdf
+	rm -f mlir-faust-signals.pdf
 	make -C examples clean
 
 
