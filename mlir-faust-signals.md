@@ -38,7 +38,7 @@ On distingue typiquement deux types de signaux :
 
 Les entiers de $\mathbb{Z}$ sont implémentés par des int 32 bits et les réels de $\mathbb{R}$ par des float 32 bits ou 64 bits, suivant l'option donnée au compilateur. 
 
-Afin de pouvoir exprimer des signaux mutuellement récursifs, on définit des signaux groupés produisant des tuples de valeurs. Par exemple, le signal stéréo `r` produit par une réverbération stéréo aura pour type: $\mathbb{Z}\rightarrow(\mathbb{R}\times\mathbb{R})$. Ces signaux groupés ne sont jamais utilisés en tat que tels, mais toujours via des _projections_. Ainsi `r.0` représente le canal gauche et `r.1` le canal droit de ce signal.
+Afin de pouvoir exprimer des signaux mutuellement récursifs, on définit des signaux groupés produisant des tuples de valeurs. Par exemple, le signal stéréo `r` produit par une réverbération stéréo aura pour type: $\mathbb{Z}\rightarrow(\mathbb{R}\times\mathbb{R})$. Ces signaux groupés ne sont jamais utilisés en tant que tels, mais toujours via des _projections_. Ainsi `r.0` représente le canal gauche et `r.1` le canal droit de ce signal.
 
 ## Types de signaux
 
