@@ -23,9 +23,9 @@ L'objectif de ce document est de proposer un dialecte MLIR dédié à la représ
 
 Conformément à la sémantique de FAUST, un signal y est défini comme une fonction du temps. Par exemple, un signal réel est représenté par le type (i32) -> f32 et un signal entier par (i32) -> i32. 
 
-Un point important abordé par ce document est la traduction des expressions récursives dans le cadre SSA de MLIR. Il est traité en introduisant le bloc `FAUST.recursive_block`. Ce bloc encapsule les dépendances circulaires et utilise une opération interne, `FAUST.self_projection`, pour permettre à une définition de faire référence à sa propre sortie future, préservant ainsi la validité de la représentation SSA.
+Un point important abordé par ce document est la traduction des expressions récursives dans le cadre SSA de MLIR. Il est traité en introduisant le bloc `faust.recursive_block`. Ce bloc encapsule les dépendances circulaires et utilise une opération interne, `faust.self_projection`, pour permettre à une définition de faire référence à sa propre sortie future, préservant ainsi la validité de la représentation SSA.
 
-A noter que certains aspects du langage ne sont pas abordés, comme par exemple les wavetables, les read-write tables, les foreign functions, ou les fichiers audio.
+A noter que certains aspects du langage ne sont pas encore abordés, comme par exemple les wavetables, les read-write tables, les foreign functions, ou les fichiers audio. Les nouvelles primitives ondemand, upsampling et downsampling ne sont pas non plus abordées.
 
 # Signaux FAUST en MLIR
 
@@ -75,21 +75,21 @@ Leur représentation MLIR est la suivante
 
 ```
 // Constantes entières
-%c1 = FAUST.constant 27 : (i32)->i32
-%c2 = FAUST.constant -42 : (i32)->i32
+%c1 = faust.constant 27 : (i32)->i32
+%c2 = faust.constant -42 : (i32)->i32
 
 // Constantes réelles 
-%c3 = FAUST.constant 0.5 : (i32)->f32
-%c4 = FAUST.constant 3.141592 : (i32)->f32
+%c3 = faust.constant 0.5 : (i32)->f32
+%c4 = faust.constant 3.141592 : (i32)->f32
 ```
 
 ### Entrées audio
 
 ```
 // Canaux d'entrée audio
-%in0 = FAUST.input 0 : (i32)->f32    // Premier canal
-%in1 = FAUST.input 1 : (i32)->f32    // Deuxième canal
-%in2 = FAUST.input 2 : (i32)->f32    // Troisième canal
+%in0 = faust.input 0 : (i32)->f32    // Premier canal
+%in1 = faust.input 1 : (i32)->f32    // Deuxième canal
+%in2 = faust.input 2 : (i32)->f32    // Troisième canal
 ```
 
 ### Éléments d'interface utilisateur
@@ -100,16 +100,16 @@ Les paramètres des sliders sont décrits par des attributs de type `f32` ou `f6
 
 ```
 // Bouton (génère 0.0 ou 1.0)
-%play = FAUST.button "play" : (i32)->f32
+%play = faust.button "play" : (i32)->f32
 
 // Case à cocher (génère 0.0 ou 1.0, état persistant)
-%mute = FAUST.checkbox "mute" : (i32)->f32
+%mute = faust.checkbox "mute" : (i32)->f32
 
 // Slider horizontal: label, init, min, max, step
-%pan = FAUST.hslider "pan" {init = 0.0 : f32, min = -1.0 : f32, max = 1.0 : f32, step = 0.01 : f32} : (i32)->f32
+%pan = faust.hslider "pan" {init = 0.0 : f32, min = -1.0 : f32, max = 1.0 : f32, step = 0.01 : f32} : (i32)->f32
 
 // Slider vertical
-%gain = FAUST.vslider "gain" {init = 0.0 : f32, min = 0.0 : f32, max = 1.0 : f32, step = 0.01 : f32} : (i32)->f32
+%gain = faust.vslider "gain" {init = 0.0 : f32, min = 0.0 : f32, max = 1.0 : f32, step = 0.01 : f32} : (i32)->f32
 ```
 
 ## Description des signaux récursifs
@@ -121,21 +121,21 @@ La traduction MLIR pose des problèmes particuliers pour éviter les dépendance
 ### Syntaxe générale
 
 ```mlir
-%block_name = FAUST.recursive_block "label" : (i32) -> tuple<T1, T2, ...> {
+%block_name = faust.recursive_block "label" : (i32) -> tuple<T1, T2, ...> {
   // Corps du bloc avec références internes
-  %self0 = FAUST.self_projection "label", 0 : (i32) -> T1
+  %self0 = faust.self_projection "label", 0 : (i32) -> T1
   // ...
-  FAUST.yield (%sig1, %sig2, ...) : (i32) -> tuple<T1, T2, ...>
+  faust.yield (%sig1, %sig2, ...) : (i32) -> tuple<T1, T2, ...>
 }
 ```
 
 **Éléments clés :**
 
-- **`FAUST.recursive_block`** : Définit un bloc de signaux récursifs avec un nom symbolique
+- **`faust.recursive_block`** : Définit un bloc de signaux récursifs avec un nom symbolique
 - **`"label"`** : Nom symbolique permettant les auto-références internes
-- **`FAUST.self_projection`** : Accède à l'une des projections d'un bloc en cours de définition
-- **`FAUST.projection`** : Accède à l'une des projections d'un bloc déjà défini
-- **`FAUST.yield`** : Retourne le tuple de signaux produit par le bloc
+- **`faust.self_projection`** : Accède à l'une des projections d'un bloc en cours de définition
+- **`faust.projection`** : Accède à l'une des projections d'un bloc déjà défini
+- **`faust.yield`** : Retourne le tuple de signaux produit par le bloc
 
 ### Exemple : Compteur récursif
 
@@ -145,24 +145,24 @@ Voici comment cette définition peut être exprimée en MLIR grâce à un bloc r
 
 ```mlir
 // Définition de la constante 1
-%one = FAUST.constant 1 : (i32) -> i32
+%one = faust.constant 1 : (i32) -> i32
 
 // Bloc récursif minimal
-%counter = FAUST.recursive_block "counter" : (i32) -> tuple<i32> {
+%counter = faust.recursive_block "counter" : (i32) -> tuple<i32> {
   // Projection interne (référence au bloc en cours de définition)
-  %y_current = FAUST.self_projection "counter", 0 : (i32) -> i32
+  %y_current = faust.self_projection "counter", 0 : (i32) -> i32
   
   // Application du délai pour obtenir y(t-1)
-  %y_prev = FAUST.delay %y_current, %one : (i32) -> i32
+  %y_prev = faust.delay %y_current, %one : (i32) -> i32
   
   // Addition : y(t) = y(t-1) + 1
-  %y_next = FAUST.add %y_prev, %one : (i32) -> i32
+  %y_next = faust.add %y_prev, %one : (i32) -> i32
   
-  FAUST.yield (%y_next) : (i32) -> tuple<i32>
+  faust.yield (%y_next) : (i32) -> tuple<i32>
 }
 
 // Projection externe pour utiliser le compteur
-%y = FAUST.projection %counter, 0 : (i32) -> i32
+%y = faust.projection %counter, 0 : (i32) -> i32
 ```
 
 ### Blocs récursifs imbriqués
@@ -170,19 +170,19 @@ Voici comment cette définition peut être exprimée en MLIR grâce à un bloc r
 Pour des systèmes plus complexes, on peut imbriquer plusieurs blocs récursifs :
 
 ```mlir
-%outer = FAUST.recursive_block "outer" : (i32) -> tuple<i32> {
-  %outer_ref = FAUST.self_projection "outer", 0 : (i32) -> i32
+%outer = faust.recursive_block "outer" : (i32) -> tuple<i32> {
+  %outer_ref = faust.self_projection "outer", 0 : (i32) -> i32
   
-  %inner = FAUST.recursive_block "inner" : (i32) -> tuple<i32> {
-    %inner_ref = FAUST.self_projection "inner", 0 : (i32) -> i32
-    %delayed = FAUST.delay %inner_ref, %delay_amt : (i32) -> i32
-    %with_outer = FAUST.add %delayed, %outer_ref : (i32) -> i32
-    FAUST.yield (%with_outer) : (i32) -> tuple<i32>
+  %inner = faust.recursive_block "inner" : (i32) -> tuple<i32> {
+    %inner_ref = faust.self_projection "inner", 0 : (i32) -> i32
+    %delayed = faust.delay %inner_ref, %delay_amt : (i32) -> i32
+    %with_outer = faust.add %delayed, %outer_ref : (i32) -> i32
+    faust.yield (%with_outer) : (i32) -> tuple<i32>
   }
   
-  %inner_proj = FAUST.projection %inner, 0 : (i32) -> i32
-  %result = FAUST.mul %outer_ref, %inner_proj : (i32) -> i32
-  FAUST.yield (%result) : (i32) -> tuple<i32>
+  %inner_proj = faust.projection %inner, 0 : (i32) -> i32
+  %result = faust.mul %outer_ref, %inner_proj : (i32) -> i32
+  faust.yield (%result) : (i32) -> tuple<i32>
 }
 ```
 
@@ -192,12 +192,12 @@ Pour des systèmes plus complexes, on peut imbriquer plusieurs blocs récursifs 
 
 Les opérations de cast permettent de convertir entre les types numériques de base.
 
-### Cast vers entier : `FAUST.intcast`
+### Cast vers entier : `faust.intcast`
 
 Convertit un signal en représentation entière par troncature.
 
 ```mlir
-%int_signal = FAUST.intcast %input_signal : (i32) -> i32
+%int_signal = faust.intcast %input_signal : (i32) -> i32
 ```
 
 **Paramètres :**
@@ -205,12 +205,12 @@ Convertit un signal en représentation entière par troncature.
 - `%input_signal` : Signal d'entrée de type `(i32) -> f32`
 - Résultat : Signal entier de type `(i32) -> i32`
 
-### Cast vers réel : `FAUST.floatcast`
+### Cast vers réel : `faust.floatcast`
 
 Convertit un signal en représentation à virgule flottante.
 
 ```mlir
-%float_signal = FAUST.floatcast %input_signal : (i32) -> f32
+%float_signal = faust.floatcast %input_signal : (i32) -> f32
 ```
 
 **Paramètres :**
@@ -218,14 +218,14 @@ Convertit un signal en représentation à virgule flottante.
 - `%input_signal` : Signal d'entrée de type `(i32) -> i32`
 - Résultat : Signal flottant de type `(i32) -> f32`
 
-### L'opération de délai : `FAUST.delay`
+### L'opération de délai : `faust.delay`
 
-L'opération `FAUST.delay` est fondamentale en FAUST pour introduire des retards dans les signaux. Le premier argument est le signal à retarder et le deuxième argument est le retard exprimé en nombre entier d'échantillons. Si $x$ est le signal que l'on veut retarder et $y$ le retard, alors le signal résultant $z$ est tel que $z(t) = x(t-y(t))$. 
+L'opération `faust.delay` est fondamentale en FAUST pour introduire des retards dans les signaux. Le premier argument est le signal à retarder et le deuxième argument est le retard exprimé en nombre entier d'échantillons. Si $x$ est le signal que l'on veut retarder et $y$ le retard, alors le signal résultant $z$ est tel que $z(t) = x(t-y(t))$. 
 
 Pour que le retard soit valide, il faut qu'il soit entier $y(t)\in\mathbb{N}$, positif et borné : $\exists m\in\mathbb{N}$ tel que $0\leq y(t) \leq m$
 
 ```mlir
-%delayed_signal = FAUST.delay %input_signal, %delay_amount : (i32) -> T
+%delayed_signal = faust.delay %input_signal, %delay_amount : (i32) -> T
 ```
 
 **Paramètres :**
@@ -238,305 +238,305 @@ Pour que le retard soit valide, il faut qu'il soit entier $y(t)\in\mathbb{N}$, p
 
 Les opérations arithmétiques de base permettent de combiner et transformer les signaux numériquement. Elles requièrent que les deux opérandes soient du même type. Il n'y a pas de promotion automatique - les conversions de type doivent être explicites.
 
-### Addition : `FAUST.add`
+### Addition : `faust.add`
 
 ```mlir
-%result = FAUST.add %signal1, %signal2 : (i32) -> T
+%result = faust.add %signal1, %signal2 : (i32) -> T
 ```
 
-### Soustraction : `FAUST.sub`
+### Soustraction : `faust.sub`
 
 ```mlir
-%result = FAUST.sub %signal1, %signal2 : (i32) -> T
+%result = faust.sub %signal1, %signal2 : (i32) -> T
 ```
 
-### Multiplication : `FAUST.mul`
+### Multiplication : `faust.mul`
 
 ```mlir
-%result = FAUST.mul %signal1, %signal2 : (i32) -> T
+%result = faust.mul %signal1, %signal2 : (i32) -> T
 ```
 
-### Division : `FAUST.div`
+### Division : `faust.div`
 
 ```mlir
-%result = FAUST.div %signal1, %signal2 : (i32) -> f32
+%result = faust.div %signal1, %signal2 : (i32) -> f32
 ```
 
 **Spécificité :** La division produit toujours un résultat de type `f32`, même si les deux opérandes sont entiers.
 
 ```mlir
 // Division entière : résultat automatiquement en float
-%int1 = FAUST.constant 7 : (i32) -> i32
-%int2 = FAUST.constant 3 : (i32) -> i32
-%result = FAUST.div %int1, %int2 : (i32) -> f32  // Résultat = 2.333...
+%int1 = faust.constant 7 : (i32) -> i32
+%int2 = faust.constant 3 : (i32) -> i32
+%result = faust.div %int1, %int2 : (i32) -> f32  // Résultat = 2.333...
 ```
 
-### Modulo : `FAUST.mod`
+### Modulo : `faust.mod`
 
 ```mlir
-%result = FAUST.mod %signal1, %signal2 : (i32) -> T
+%result = faust.mod %signal1, %signal2 : (i32) -> T
 ```
 
 ## Opérations unaires
 
-### Valeur absolue : `FAUST.abs`
+### Valeur absolue : `faust.abs`
 
 ```mlir
-%result = FAUST.abs %signal : (i32) -> T
+%result = faust.abs %signal : (i32) -> T
 ```
 
-### Négation : `FAUST.neg`
+### Négation : `faust.neg`
 
 ```mlir
-%result = FAUST.neg %signal : (i32) -> T
+%result = faust.neg %signal : (i32) -> T
 ```
 
-### Inverse : `FAUST.inv`
+### Inverse : `faust.inv`
 
 ```mlir
-%result = FAUST.inv %signal : (i32) -> f32  // 1/x
+%result = faust.inv %signal : (i32) -> f32  // 1/x
 ```
 
 ## Opérations de comparaison
 
 Toutes les opérations de comparaison produisent un signal entier (0 pour faux, 1 pour vrai).
 
-### Égalité : `FAUST.eq`
+### Égalité : `faust.eq`
 
 ```mlir
-%result = FAUST.eq %signal1, %signal2 : (i32) -> i32
+%result = faust.eq %signal1, %signal2 : (i32) -> i32
 ```
 
-### Inégalité : `FAUST.ne`
+### Inégalité : `faust.ne`
 
 ```mlir
-%result = FAUST.ne %signal1, %signal2 : (i32) -> i32
+%result = faust.ne %signal1, %signal2 : (i32) -> i32
 ```
 
-### Inférieur : `FAUST.lt`
+### Inférieur : `faust.lt`
 
 ```mlir
-%result = FAUST.lt %signal1, %signal2 : (i32) -> i32
+%result = faust.lt %signal1, %signal2 : (i32) -> i32
 ```
 
-### Inférieur ou égal : `FAUST.le`
+### Inférieur ou égal : `faust.le`
 
 ```mlir
-%result = FAUST.le %signal1, %signal2 : (i32) -> i32
+%result = faust.le %signal1, %signal2 : (i32) -> i32
 ```
 
-### Supérieur : `FAUST.gt`
+### Supérieur : `faust.gt`
 
 ```mlir
-%result = FAUST.gt %signal1, %signal2 : (i32) -> i32
+%result = faust.gt %signal1, %signal2 : (i32) -> i32
 ```
 
-### Supérieur ou égal : `FAUST.ge`
+### Supérieur ou égal : `faust.ge`
 
 ```mlir
-%result = FAUST.ge %signal1, %signal2 : (i32) -> i32
+%result = faust.ge %signal1, %signal2 : (i32) -> i32
 ```
 
 ## Opérations logiques et binaires
 
-### ET logique : `FAUST.and`
+### ET logique : `faust.and`
 
 ```mlir
-%result = FAUST.and %signal1, %signal2 : (i32) -> i32
+%result = faust.and %signal1, %signal2 : (i32) -> i32
 ```
 
-### OU logique : `FAUST.or`
+### OU logique : `faust.or`
 
 ```mlir
-%result = FAUST.or %signal1, %signal2 : (i32) -> i32
+%result = faust.or %signal1, %signal2 : (i32) -> i32
 ```
 
-### OU exclusif : `FAUST.xor`
+### OU exclusif : `faust.xor`
 
 ```mlir
-%result = FAUST.xor %signal1, %signal2 : (i32) -> i32
+%result = faust.xor %signal1, %signal2 : (i32) -> i32
 ```
 
-### NON logique : `FAUST.not`
+### NON logique : `faust.not`
 
 ```mlir
-%result = FAUST.not %signal : (i32) -> i32
+%result = faust.not %signal : (i32) -> i32
 ```
 
-### Décalage à gauche : `FAUST.lsh`
+### Décalage à gauche : `faust.lsh`
 
 ```mlir
-%result = FAUST.lsh %signal, %shift : (i32) -> i32
+%result = faust.lsh %signal, %shift : (i32) -> i32
 ```
 
-### Décalage à droite : `FAUST.rsh`
+### Décalage à droite : `faust.rsh`
 
 ```mlir
-%result = FAUST.rsh %signal, %shift : (i32) -> i32
+%result = faust.rsh %signal, %shift : (i32) -> i32
 ```
 
 ## Fonctions trigonométriques
 
-### Sinus : `FAUST.sin`
+### Sinus : `faust.sin`
 
 ```mlir
-%result = FAUST.sin %signal : (i32) -> f32
+%result = faust.sin %signal : (i32) -> f32
 ```
 
-### Cosinus : `FAUST.cos`
+### Cosinus : `faust.cos`
 
 ```mlir
-%result = FAUST.cos %signal : (i32) -> f32
+%result = faust.cos %signal : (i32) -> f32
 ```
 
-### Tangente : `FAUST.tan`
+### Tangente : `faust.tan`
 
 ```mlir
-%result = FAUST.tan %signal : (i32) -> f32
+%result = faust.tan %signal : (i32) -> f32
 ```
 
 ## Fonctions trigonométriques inverses
 
-### Arc sinus : `FAUST.asin`
+### Arc sinus : `faust.asin`
 
 ```mlir
-%result = FAUST.asin %signal : (i32) -> f32
+%result = faust.asin %signal : (i32) -> f32
 ```
 
-### Arc cosinus : `FAUST.acos`
+### Arc cosinus : `faust.acos`
 
 ```mlir
-%result = FAUST.acos %signal : (i32) -> f32
+%result = faust.acos %signal : (i32) -> f32
 ```
 
-### Arc tangente : `FAUST.atan`
+### Arc tangente : `faust.atan`
 
 ```mlir
-%result = FAUST.atan %signal : (i32) -> f32
+%result = faust.atan %signal : (i32) -> f32
 ```
 
-### Arc tangente à deux arguments : `FAUST.atan2`
+### Arc tangente à deux arguments : `faust.atan2`
 
 ```mlir
-%result = FAUST.atan2 %y, %x : (i32) -> f32
+%result = faust.atan2 %y, %x : (i32) -> f32
 ```
 
 ## Fonctions hyperboliques
 
-### Sinus hyperbolique : `FAUST.sinh`
+### Sinus hyperbolique : `faust.sinh`
 
 ```mlir
-%result = FAUST.sinh %signal : (i32) -> f32
+%result = faust.sinh %signal : (i32) -> f32
 ```
 
-### Cosinus hyperbolique : `FAUST.cosh`
+### Cosinus hyperbolique : `faust.cosh`
 
 ```mlir
-%result = FAUST.cosh %signal : (i32) -> f32
+%result = faust.cosh %signal : (i32) -> f32
 ```
 
-### Tangente hyperbolique : `FAUST.tanh`
+### Tangente hyperbolique : `faust.tanh`
 
 ```mlir
-%result = FAUST.tanh %signal : (i32) -> f32
+%result = faust.tanh %signal : (i32) -> f32
 ```
 
 ## Fonctions hyperboliques inverses
 
-### Arc sinus hyperbolique : `FAUST.asinh`
+### Arc sinus hyperbolique : `faust.asinh`
 
 ```mlir
-%result = FAUST.asinh %signal : (i32) -> f32
+%result = faust.asinh %signal : (i32) -> f32
 ```
 
-### Arc cosinus hyperbolique : `FAUST.acosh`
+### Arc cosinus hyperbolique : `faust.acosh`
 
 ```mlir
-%result = FAUST.acosh %signal : (i32) -> f32
+%result = faust.acosh %signal : (i32) -> f32
 ```
 
-### Arc tangente hyperbolique : `FAUST.atanh`
+### Arc tangente hyperbolique : `faust.atanh`
 
 ```mlir
-%result = FAUST.atanh %signal : (i32) -> f32
+%result = faust.atanh %signal : (i32) -> f32
 ```
 
 ## Fonctions exponentielles et logarithmiques
 
-### Exponentielle : `FAUST.exp`
+### Exponentielle : `faust.exp`
 
 ```mlir
-%result = FAUST.exp %signal : (i32) -> f32
+%result = faust.exp %signal : (i32) -> f32
 ```
 
-### Logarithme naturel : `FAUST.log`
+### Logarithme naturel : `faust.log`
 
 ```mlir
-%result = FAUST.log %signal : (i32) -> f32
+%result = faust.log %signal : (i32) -> f32
 ```
 
-### Logarithme base 10 : `FAUST.log10`
+### Logarithme base 10 : `faust.log10`
 
 ```mlir
-%result = FAUST.log10 %signal : (i32) -> f32
+%result = faust.log10 %signal : (i32) -> f32
 ```
 
-### Puissance : `FAUST.pow`
+### Puissance : `faust.pow`
 
 ```mlir
-%result = FAUST.pow %base, %exponent : (i32) -> f32
+%result = faust.pow %base, %exponent : (i32) -> f32
 ```
 
-### Racine carrée : `FAUST.sqrt`
+### Racine carrée : `faust.sqrt`
 
 ```mlir
-%result = FAUST.sqrt %signal : (i32) -> f32
+%result = faust.sqrt %signal : (i32) -> f32
 ```
 
 ## Fonctions d'arrondi et de troncature
 
-### Plafond : `FAUST.ceil`
+### Plafond : `faust.ceil`
 
 ```mlir
-%result = FAUST.ceil %signal : (i32) -> f32
+%result = faust.ceil %signal : (i32) -> f32
 ```
 
-### Plancher : `FAUST.floor`
+### Plancher : `faust.floor`
 
 ```mlir
-%result = FAUST.floor %signal : (i32) -> f32
+%result = faust.floor %signal : (i32) -> f32
 ```
 
-### Arrondi : `FAUST.round`
+### Arrondi : `faust.round`
 
 ```mlir
-%result = FAUST.round %signal : (i32) -> f32
+%result = faust.round %signal : (i32) -> f32
 ```
 
-### Arrondi vers l'entier le plus proche : `FAUST.rint`
+### Arrondi vers l'entier le plus proche : `faust.rint`
 
 ```mlir
-%result = FAUST.rint %signal : (i32) -> f32
+%result = faust.rint %signal : (i32) -> f32
 ```
 
 ## Fonctions de sélection
 
-### Minimum : `FAUST.min`
+### Minimum : `faust.min`
 
 ```mlir
-%result = FAUST.min %signal1, %signal2 : (i32) -> T
+%result = faust.min %signal1, %signal2 : (i32) -> T
 ```
 
-### Maximum : `FAUST.max`
+### Maximum : `faust.max`
 
 ```mlir
-%result = FAUST.max %signal1, %signal2 : (i32) -> T
+%result = faust.max %signal1, %signal2 : (i32) -> T
 ```
 
-### Sélection conditionnelle : `FAUST.select2`
+### Sélection conditionnelle : `faust.select2`
 
 ```mlir
-%result = FAUST.select2 %condition, %else_value, %then_value : (i32) -> T
+%result = faust.select2 %condition, %else_value, %then_value : (i32) -> T
 ```
 
 **Sémantique :** Si `%condition != 0`, retourne `%then_value`, sinon `%else_value`.
