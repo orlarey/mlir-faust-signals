@@ -38,12 +38,12 @@ Le temps est représenté par $\mathbb{Z}$, car il est discret et potentiellemen
 
 Pour rester proche de la spécification formelle, le dialecte `faust` introduit deux types de base :
 
-- `!faust.int` qui représente l'ensemble des entiers $\mathbb{Z}$;
+- `!faust.integer` qui représente l'ensemble des entiers $\mathbb{Z}$;
 - `!faust.real` qui représente l'ensemble des réels  $\mathbb{R}$.
 
 Lors des phases de _lowering_, ces types pourront être traduits vers des types machine concrets, par exemple :
 
-* `!faust.int`  vers `i32`;
+* `!faust.integer`  vers `i32`;
 * `!faust.real` vers `f32` ou `f64`.
 
 
@@ -51,22 +51,22 @@ Lors des phases de _lowering_, ces types pourront être traduits vers des types 
 
 Les types signaux s'expriment de la manière suivante :
 
-- `(!faust.int) -> !faust.int` pour les signaux entiers ;
-- `(!faust.int) -> !faust.real` pour les signaux réels.
+- `(!faust.integer) -> !faust.integer` pour les signaux entiers ;
+- `(!faust.integer) -> !faust.real` pour les signaux réels.
 
 Pour modéliser des groupes de signaux qui peuvent être mutuellement récursifs, on introduit le type signal multicanal :
 
-- `(!faust.int) -> tuple<t0,t1,...>`
+- `(!faust.integer) -> tuple<t0,t1,...>`
 
-avec `ti` = `!faust.int` ou `!faust.real`
+avec `ti` = `!faust.integer` ou `!faust.real`
 
 Ainsi, le signal produit par une réverbération stéréophonique pourra être modélisé par :
 
-- `(!faust.int) -> tuple<!faust.real, !faust.real>`
+- `(!faust.integer) -> tuple<!faust.real, !faust.real>`
 
   et le signal d'un simple IIR, par :
 
-- `(!faust.int) -> tuple<!faust.real>`
+- `(!faust.integer) -> tuple<!faust.real>`
 
 Un système de projection permet d'accéder aux canaux individuels d'un signal multicanal.
 
@@ -90,21 +90,21 @@ Leur représentation MLIR est la suivante
 
 ```
 // Constantes entières
-%c1 = faust.constant 27 : (!faust.int)->!faust.int
-%c2 = faust.constant -42 : (!faust.int)->!faust.int
+%c1 = faust.constant 27 : (!faust.integer)->!faust.integer
+%c2 = faust.constant -42 : (!faust.integer)->!faust.integer
 
 // Constantes réelles 
-%c3 = faust.constant 0.5 : (!faust.int)->!faust.real
-%c4 = faust.constant 3.141592 : (!faust.int)->!faust.real
+%c3 = faust.constant 0.5 : (!faust.integer)->!faust.real
+%c4 = faust.constant 3.141592 : (!faust.integer)->!faust.real
 ```
 
 ### Entrées audio
 
 ```
 // Canaux d'entrée audio
-%in0 = faust.input 0 : (!faust.int)->!faust.real    // Premier canal
-%in1 = faust.input 1 : (!faust.int)->!faust.real    // Deuxième canal
-%in2 = faust.input 2 : (!faust.int)->!faust.real    // Troisième canal
+%in0 = faust.input 0 : (!faust.integer)->!faust.real    // Premier canal
+%in1 = faust.input 1 : (!faust.integer)->!faust.real    // Deuxième canal
+%in2 = faust.input 2 : (!faust.integer)->!faust.real    // Troisième canal
 ```
 
 ### Éléments d'interface utilisateur
@@ -115,16 +115,16 @@ Les paramètres des sliders sont décrits par des attributs de type `!faust.real
 
 ```
 // Bouton (génère 0.0 ou 1.0)
-%play = faust.button "play" : (!faust.int)->!faust.real
+%play = faust.button "play" : (!faust.integer)->!faust.real
 
 // Case à cocher (génère 0.0 ou 1.0, état persistant)
-%mute = faust.checkbox "mute" : (!faust.int)->!faust.real
+%mute = faust.checkbox "mute" : (!faust.integer)->!faust.real
 
 // Slider horizontal: label, init, min, max, step
-%pan = faust.hslider "pan" {init = 0.0 : !faust.real, min = -1.0 : !faust.real, max = 1.0 : !faust.real, step = 0.01 : !faust.real} : (!faust.int)->!faust.real
+%pan = faust.hslider "pan" {init = 0.0 : !faust.real, min = -1.0 : !faust.real, max = 1.0 : !faust.real, step = 0.01 : !faust.real} : (!faust.integer)->!faust.real
 
 // Slider vertical
-%gain = faust.vslider "gain" {init = 0.0 : !faust.real, min = 0.0 : !faust.real, max = 1.0 : !faust.real, step = 0.01 : !faust.real} : (!faust.int)->!faust.real
+%gain = faust.vslider "gain" {init = 0.0 : !faust.real, min = 0.0 : !faust.real, max = 1.0 : !faust.real, step = 0.01 : !faust.real} : (!faust.integer)->!faust.real
 ```
 
 ## Description des signaux récursifs
@@ -136,11 +136,11 @@ La traduction MLIR pose des problèmes particuliers pour éviter les dépendance
 ### Syntaxe générale
 
 ```mlir
-%block_name = faust.recursive_block "label" : (!faust.int) -> tuple<T1, T2, ...> {
+%block_name = faust.recursive_block "label" : (!faust.integer) -> tuple<T1, T2, ...> {
   // Corps du bloc avec références internes
-  %self0 = faust.self_projection "label", 0 : (!faust.int) -> T1
+  %self0 = faust.self_projection "label", 0 : (!faust.integer) -> T1
   // ...
-  faust.yield (%sig1, %sig2, ...) : (!faust.int) -> tuple<T1, T2, ...>
+  faust.yield (%sig1, %sig2, ...) : (!faust.integer) -> tuple<T1, T2, ...>
 }
 ```
 
@@ -157,24 +157,24 @@ Voici comment le signal $y(t)=1+y(t-1)$  peut être exprimée en MLIR grâce à 
 
 ```mlir
 // Définition de la constante 1
-%one = faust.constant 1 : (!faust.int) -> !faust.int
+%one = faust.constant 1 : (!faust.integer) -> !faust.integer
 
 // Bloc récursif minimal
-%counter = faust.recursive_block "counter" : (!faust.int) -> tuple<!faust.int> {
+%counter = faust.recursive_block "counter" : (!faust.integer) -> tuple<!faust.integer> {
   // Projection interne (référence au bloc en cours de définition)
-  %y_current = faust.self_projection "counter", 0 : (!faust.int) -> !faust.int
+  %y_current = faust.self_projection "counter", 0 : (!faust.integer) -> !faust.integer
   
   // Application du délai pour obtenir y(t-1)
-  %y_prev = faust.delay %y_current, %one : (!faust.int) -> !faust.int
+  %y_prev = faust.delay %y_current, %one : (!faust.integer) -> !faust.integer
   
   // Addition : y(t) = y(t-1) + 1
-  %y_next = faust.add %y_prev, %one : (!faust.int) -> !faust.int
+  %y_next = faust.add %y_prev, %one : (!faust.integer) -> !faust.integer
   
-  faust.yield (%y_next) : (!faust.int) -> tuple<!faust.int>
+  faust.yield (%y_next) : (!faust.integer) -> tuple<!faust.integer>
 }
 
 // Projection externe pour accéder au canal 0 du compteur
-%y = faust.projection %counter, 0 : (!faust.int) -> !faust.int
+%y = faust.projection %counter, 0 : (!faust.integer) -> !faust.integer
 ```
 
 ### Blocs récursifs imbriqués
@@ -182,19 +182,19 @@ Voici comment le signal $y(t)=1+y(t-1)$  peut être exprimée en MLIR grâce à 
 Pour des systèmes plus complexes, on peut imbriquer plusieurs blocs récursifs :
 
 ```mlir
-%outer = faust.recursive_block "outer" : (!faust.int) -> tuple<!faust.int> {
-  %outer_ref = faust.self_projection "outer", 0 : (!faust.int) -> !faust.int
+%outer = faust.recursive_block "outer" : (!faust.integer) -> tuple<!faust.integer> {
+  %outer_ref = faust.self_projection "outer", 0 : (!faust.integer) -> !faust.integer
   
-  %inner = faust.recursive_block "inner" : (!faust.int) -> tuple<!faust.int> {
-    %inner_ref = faust.self_projection "inner", 0 : (!faust.int) -> !faust.int
-    %delayed = faust.delay %inner_ref, %delay_amt : (!faust.int) -> !faust.int
-    %with_outer = faust.add %delayed, %outer_ref : (!faust.int) -> !faust.int
-    faust.yield (%with_outer) : (!faust.int) -> tuple<!faust.int>
+  %inner = faust.recursive_block "inner" : (!faust.integer) -> tuple<!faust.integer> {
+    %inner_ref = faust.self_projection "inner", 0 : (!faust.integer) -> !faust.integer
+    %delayed = faust.delay %inner_ref, %delay_amt : (!faust.integer) -> !faust.integer
+    %with_outer = faust.add %delayed, %outer_ref : (!faust.integer) -> !faust.integer
+    faust.yield (%with_outer) : (!faust.integer) -> tuple<!faust.integer>
   }
   
-  %inner_proj = faust.projection %inner, 0 : (!faust.int) -> !faust.int
-  %result = faust.mul %outer_ref, %inner_proj : (!faust.int) -> !faust.int
-  faust.yield (%result) : (!faust.int) -> tuple<!faust.int>
+  %inner_proj = faust.projection %inner, 0 : (!faust.integer) -> !faust.integer
+  %result = faust.mul %outer_ref, %inner_proj : (!faust.integer) -> !faust.integer
+  faust.yield (%result) : (!faust.integer) -> tuple<!faust.integer>
 }
 ```
 
@@ -209,26 +209,26 @@ Les opérations de cast permettent de convertir entre les types numériques de b
 Convertit un signal en représentation entière par troncature.
 
 ```mlir
-%int_signal = faust.intcast %input_signal : (!faust.int) -> !faust.int
+%int_signal = faust.intcast %input_signal : (!faust.integer) -> !faust.integer
 ```
 
 **Paramètres :**
 
-- `%input_signal` : Signal d'entrée de type `(!faust.int) -> !faust.real`
-- Résultat : Signal entier de type `(!faust.int) -> !faust.int`
+- `%input_signal` : Signal d'entrée de type `(!faust.integer) -> !faust.real`
+- Résultat : Signal entier de type `(!faust.integer) -> !faust.integer`
 
-### Cast vers réel : `faust.floatcast`
+### Cast vers réel : `faust.realcast`
 
 Convertit un signal en représentation à virgule flottante.
 
 ```mlir
-%float_signal = faust.floatcast %input_signal : (!faust.int) -> !faust.real
+%float_signal = faust.realcast %input_signal : (!faust.integer) -> !faust.real
 ```
 
 **Paramètres :**
 
-- `%input_signal` : Signal d'entrée de type `(!faust.int) -> !faust.int`
-- Résultat : Signal flottant de type `(!faust.int) -> !faust.real`
+- `%input_signal` : Signal d'entrée de type `(!faust.integer) -> !faust.integer`
+- Résultat : Signal flottant de type `(!faust.integer) -> !faust.real`
 
 ### L'opération de délai : `faust.delay`
 
@@ -237,14 +237,14 @@ L'opération `faust.delay` est fondamentale en FAUST pour introduire des retards
 Pour que le retard soit valide, il faut qu'il soit entier $y(t)\in\mathbb{N}$, positif et borné : $\exists m\in\mathbb{N}$ tel que $0\leq y(t) \leq m$
 
 ```mlir
-%delayed_signal = faust.delay %input_signal, %delay_amount : (!faust.int) -> T
+%delayed_signal = faust.delay %input_signal, %delay_amount : (!faust.integer) -> T
 ```
 
 **Paramètres :**
 
-- `%input_signal` : Le signal à retarder de type `(!faust.int) -> T`
-- `%delay_amount` : La quantité de délai, également un signal de type `(!faust.int) -> !faust.int`
-- Résultat : Signal retardé de type `(!faust.int) -> T`
+- `%input_signal` : Le signal à retarder de type `(!faust.integer) -> T`
+- `%delay_amount` : La quantité de délai, également un signal de type `(!faust.integer) -> !faust.integer`
+- Résultat : Signal retardé de type `(!faust.integer) -> T`
 
 ## Opérations arithmétiques
 
@@ -253,40 +253,40 @@ Les opérations arithmétiques de base permettent de combiner et transformer les
 ### Addition : `faust.add`
 
 ```mlir
-%result = faust.add %signal1, %signal2 : (!faust.int) -> T
+%result = faust.add %signal1, %signal2 : (!faust.integer) -> T
 ```
 
 ### Soustraction : `faust.sub`
 
 ```mlir
-%result = faust.sub %signal1, %signal2 : (!faust.int) -> T
+%result = faust.sub %signal1, %signal2 : (!faust.integer) -> T
 ```
 
 ### Multiplication : `faust.mul`
 
 ```mlir
-%result = faust.mul %signal1, %signal2 : (!faust.int) -> T
+%result = faust.mul %signal1, %signal2 : (!faust.integer) -> T
 ```
 
 ### Division : `faust.div`
 
 ```mlir
-%result = faust.div %signal1, %signal2 : (!faust.int) -> !faust.real
+%result = faust.div %signal1, %signal2 : (!faust.integer) -> !faust.real
 ```
 
 **Spécificité :** La division produit toujours un résultat de type `!faust.real`, même si les deux opérandes sont entiers.
 
 ```mlir
 // Division entière : résultat automatiquement en float
-%int1 = faust.constant 7 : (!faust.int) -> !faust.int
-%int2 = faust.constant 3 : (!faust.int) -> !faust.int
-%result = faust.div %int1, %int2 : (!faust.int) -> !faust.real  // Résultat = 2.333...
+%int1 = faust.constant 7 : (!faust.integer) -> !faust.integer
+%int2 = faust.constant 3 : (!faust.integer) -> !faust.integer
+%result = faust.div %int1, %int2 : (!faust.integer) -> !faust.real  // Résultat = 2.333...
 ```
 
 ### Modulo : `faust.mod`
 
 ```mlir
-%result = faust.mod %signal1, %signal2 : (!faust.int) -> T
+%result = faust.mod %signal1, %signal2 : (!faust.integer) -> T
 ```
 
 ## Opérations unaires
@@ -294,19 +294,19 @@ Les opérations arithmétiques de base permettent de combiner et transformer les
 ### Valeur absolue : `faust.abs`
 
 ```mlir
-%result = faust.abs %signal : (!faust.int) -> T
+%result = faust.abs %signal : (!faust.integer) -> T
 ```
 
 ### Négation : `faust.neg`
 
 ```mlir
-%result = faust.neg %signal : (!faust.int) -> T
+%result = faust.neg %signal : (!faust.integer) -> T
 ```
 
 ### Inverse : `faust.inv`
 
 ```mlir
-%result = faust.inv %signal : (!faust.int) -> !faust.real  // 1/x
+%result = faust.inv %signal : (!faust.integer) -> !faust.real  // 1/x
 ```
 
 ## Opérations de comparaison
@@ -316,37 +316,37 @@ Toutes les opérations de comparaison produisent un signal entier (0 pour faux, 
 ### Égalité : `faust.eq`
 
 ```mlir
-%result = faust.eq %signal1, %signal2 : (!faust.int) -> !faust.int
+%result = faust.eq %signal1, %signal2 : (!faust.integer) -> !faust.integer
 ```
 
 ### Inégalité : `faust.ne`
 
 ```mlir
-%result = faust.ne %signal1, %signal2 : (!faust.int) -> !faust.int
+%result = faust.ne %signal1, %signal2 : (!faust.integer) -> !faust.integer
 ```
 
 ### Inférieur : `faust.lt`
 
 ```mlir
-%result = faust.lt %signal1, %signal2 : (!faust.int) -> !faust.int
+%result = faust.lt %signal1, %signal2 : (!faust.integer) -> !faust.integer
 ```
 
 ### Inférieur ou égal : `faust.le`
 
 ```mlir
-%result = faust.le %signal1, %signal2 : (!faust.int) -> !faust.int
+%result = faust.le %signal1, %signal2 : (!faust.integer) -> !faust.integer
 ```
 
 ### Supérieur : `faust.gt`
 
 ```mlir
-%result = faust.gt %signal1, %signal2 : (!faust.int) -> !faust.int
+%result = faust.gt %signal1, %signal2 : (!faust.integer) -> !faust.integer
 ```
 
 ### Supérieur ou égal : `faust.ge`
 
 ```mlir
-%result = faust.ge %signal1, %signal2 : (!faust.int) -> !faust.int
+%result = faust.ge %signal1, %signal2 : (!faust.integer) -> !faust.integer
 ```
 
 ## Opérations logiques et binaires
@@ -354,37 +354,37 @@ Toutes les opérations de comparaison produisent un signal entier (0 pour faux, 
 ### ET logique : `faust.and`
 
 ```mlir
-%result = faust.and %signal1, %signal2 : (!faust.int) -> !faust.int
+%result = faust.and %signal1, %signal2 : (!faust.integer) -> !faust.integer
 ```
 
 ### OU logique : `faust.or`
 
 ```mlir
-%result = faust.or %signal1, %signal2 : (!faust.int) -> !faust.int
+%result = faust.or %signal1, %signal2 : (!faust.integer) -> !faust.integer
 ```
 
 ### OU exclusif : `faust.xor`
 
 ```mlir
-%result = faust.xor %signal1, %signal2 : (!faust.int) -> !faust.int
+%result = faust.xor %signal1, %signal2 : (!faust.integer) -> !faust.integer
 ```
 
 ### NON logique : `faust.not`
 
 ```mlir
-%result = faust.not %signal : (!faust.int) -> !faust.int
+%result = faust.not %signal : (!faust.integer) -> !faust.integer
 ```
 
 ### Décalage à gauche : `faust.lsh`
 
 ```mlir
-%result = faust.lsh %signal, %shift : (!faust.int) -> !faust.int
+%result = faust.lsh %signal, %shift : (!faust.integer) -> !faust.integer
 ```
 
 ### Décalage à droite : `faust.rsh`
 
 ```mlir
-%result = faust.rsh %signal, %shift : (!faust.int) -> !faust.int
+%result = faust.rsh %signal, %shift : (!faust.integer) -> !faust.integer
 ```
 
 ## Fonctions trigonométriques
@@ -392,19 +392,19 @@ Toutes les opérations de comparaison produisent un signal entier (0 pour faux, 
 ### Sinus : `faust.sin`
 
 ```mlir
-%result = faust.sin %signal : (!faust.int) -> !faust.real
+%result = faust.sin %signal : (!faust.integer) -> !faust.real
 ```
 
 ### Cosinus : `faust.cos`
 
 ```mlir
-%result = faust.cos %signal : (!faust.int) -> !faust.real
+%result = faust.cos %signal : (!faust.integer) -> !faust.real
 ```
 
 ### Tangente : `faust.tan`
 
 ```mlir
-%result = faust.tan %signal : (!faust.int) -> !faust.real
+%result = faust.tan %signal : (!faust.integer) -> !faust.real
 ```
 
 ## Fonctions trigonométriques inverses
@@ -412,25 +412,25 @@ Toutes les opérations de comparaison produisent un signal entier (0 pour faux, 
 ### Arc sinus : `faust.asin`
 
 ```mlir
-%result = faust.asin %signal : (!faust.int) -> !faust.real
+%result = faust.asin %signal : (!faust.integer) -> !faust.real
 ```
 
 ### Arc cosinus : `faust.acos`
 
 ```mlir
-%result = faust.acos %signal : (!faust.int) -> !faust.real
+%result = faust.acos %signal : (!faust.integer) -> !faust.real
 ```
 
 ### Arc tangente : `faust.atan`
 
 ```mlir
-%result = faust.atan %signal : (!faust.int) -> !faust.real
+%result = faust.atan %signal : (!faust.integer) -> !faust.real
 ```
 
 ### Arc tangente à deux arguments : `faust.atan2`
 
 ```mlir
-%result = faust.atan2 %y, %x : (!faust.int) -> !faust.real
+%result = faust.atan2 %y, %x : (!faust.integer) -> !faust.real
 ```
 
 ## Fonctions hyperboliques
@@ -438,19 +438,19 @@ Toutes les opérations de comparaison produisent un signal entier (0 pour faux, 
 ### Sinus hyperbolique : `faust.sinh`
 
 ```mlir
-%result = faust.sinh %signal : (!faust.int) -> !faust.real
+%result = faust.sinh %signal : (!faust.integer) -> !faust.real
 ```
 
 ### Cosinus hyperbolique : `faust.cosh`
 
 ```mlir
-%result = faust.cosh %signal : (!faust.int) -> !faust.real
+%result = faust.cosh %signal : (!faust.integer) -> !faust.real
 ```
 
 ### Tangente hyperbolique : `faust.tanh`
 
 ```mlir
-%result = faust.tanh %signal : (!faust.int) -> !faust.real
+%result = faust.tanh %signal : (!faust.integer) -> !faust.real
 ```
 
 ## Fonctions hyperboliques inverses
@@ -458,19 +458,19 @@ Toutes les opérations de comparaison produisent un signal entier (0 pour faux, 
 ### Arc sinus hyperbolique : `faust.asinh`
 
 ```mlir
-%result = faust.asinh %signal : (!faust.int) -> !faust.real
+%result = faust.asinh %signal : (!faust.integer) -> !faust.real
 ```
 
 ### Arc cosinus hyperbolique : `faust.acosh`
 
 ```mlir
-%result = faust.acosh %signal : (!faust.int) -> !faust.real
+%result = faust.acosh %signal : (!faust.integer) -> !faust.real
 ```
 
 ### Arc tangente hyperbolique : `faust.atanh`
 
 ```mlir
-%result = faust.atanh %signal : (!faust.int) -> !faust.real
+%result = faust.atanh %signal : (!faust.integer) -> !faust.real
 ```
 
 ## Fonctions exponentielles et logarithmiques
@@ -478,31 +478,31 @@ Toutes les opérations de comparaison produisent un signal entier (0 pour faux, 
 ### Exponentielle : `faust.exp`
 
 ```mlir
-%result = faust.exp %signal : (!faust.int) -> !faust.real
+%result = faust.exp %signal : (!faust.integer) -> !faust.real
 ```
 
 ### Logarithme naturel : `faust.log`
 
 ```mlir
-%result = faust.log %signal : (!faust.int) -> !faust.real
+%result = faust.log %signal : (!faust.integer) -> !faust.real
 ```
 
 ### Logarithme base 10 : `faust.log10`
 
 ```mlir
-%result = faust.log10 %signal : (!faust.int) -> !faust.real
+%result = faust.log10 %signal : (!faust.integer) -> !faust.real
 ```
 
 ### Puissance : `faust.pow`
 
 ```mlir
-%result = faust.pow %base, %exponent : (!faust.int) -> !faust.real
+%result = faust.pow %base, %exponent : (!faust.integer) -> !faust.real
 ```
 
 ### Racine carrée : `faust.sqrt`
 
 ```mlir
-%result = faust.sqrt %signal : (!faust.int) -> !faust.real
+%result = faust.sqrt %signal : (!faust.integer) -> !faust.real
 ```
 
 ## Fonctions d'arrondi et de troncature
@@ -510,25 +510,25 @@ Toutes les opérations de comparaison produisent un signal entier (0 pour faux, 
 ### Plafond : `faust.ceil`
 
 ```mlir
-%result = faust.ceil %signal : (!faust.int) -> !faust.real
+%result = faust.ceil %signal : (!faust.integer) -> !faust.real
 ```
 
 ### Plancher : `faust.floor`
 
 ```mlir
-%result = faust.floor %signal : (!faust.int) -> !faust.real
+%result = faust.floor %signal : (!faust.integer) -> !faust.real
 ```
 
 ### Arrondi : `faust.round`
 
 ```mlir
-%result = faust.round %signal : (!faust.int) -> !faust.real
+%result = faust.round %signal : (!faust.integer) -> !faust.real
 ```
 
 ### Arrondi vers l'entier le plus proche : `faust.rint`
 
 ```mlir
-%result = faust.rint %signal : (!faust.int) -> !faust.real
+%result = faust.rint %signal : (!faust.integer) -> !faust.real
 ```
 
 ## Fonctions de sélection
@@ -536,13 +536,13 @@ Toutes les opérations de comparaison produisent un signal entier (0 pour faux, 
 ### Minimum : `faust.min`
 
 ```mlir
-%result = faust.min %signal1, %signal2 : (!faust.int) -> T
+%result = faust.min %signal1, %signal2 : (!faust.integer) -> T
 ```
 
 ### Maximum : `faust.max`
 
 ```mlir
-%result = faust.max %signal1, %signal2 : (!faust.int) -> T
+%result = faust.max %signal1, %signal2 : (!faust.integer) -> T
 ```
 
 ### Sélection par multiplexage : `faust.select2`
@@ -559,5 +559,5 @@ Soient $c(t)$ le signal de contrôle, et $s0(t)$, $s1(t)$ les deux signaux d'ent
 
 ```mlir
 // %select_sig doit produire 0 ou 1
-%result = faust.select2 %select_sig, %input_for_0, %input_for_1 : (!faust.int) -> T
+%result = faust.select2 %select_sig, %input_for_0, %input_for_1 : (!faust.integer) -> T
 ```
